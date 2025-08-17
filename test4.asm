@@ -28,9 +28,12 @@ main_loop:
     mov ah, 09h
     lea dx, menu_msg
     int 21h
-
+    
     mov ah, 09h
     lea dx, select_msg
+    int 21h
+
+    mov ah, 01h
     int 21h
     mov input, al
 
