@@ -23,11 +23,36 @@ wan_tan_mee_msg db "Wan Tan Mee $",
 current_price db "your current price is : RM $",
 price db ?
 qty db ? ; to store user input qty
+
+price_chicken db ' 6.50$',
+price_egg db ' 1.50$',
+price_roasted_pork db ' 188.00$',
+price_charxiufan db '11.00$',
+price_wan_tan_mee db '7.50$',
+
+qty_msg db "Enter your quantity (integers) > $",
+current_meal db "current meal is: $",
+asterisk db " (* $",
+qty_msg2 db " ) $",
+
+qty_input label byte
+max_len db 100
+act_len db ?
+kb_data db 100 DUP('')
+
 .code 
 main PROC
     mov ax, @data
     mov ds,ax
 
+    ;clear screen
+    mov ax, 0600h
+    mov bh,71h
+    mov cx,0h
+    mov dx, 184fh
+    int 10h
+    
+    ;program start
     mov ah, 09h ; Welcome to food ordering system
     lea dx, msg 
     int 21h 
@@ -204,6 +229,149 @@ print_current_price:
 
     mov ah, 09h ; current price 
     lea dx, current_price 
+    int 21h
+
+    jmp print
+
+    continue:
+    mov ah,02h ; new line
+    mov dl,0Ah
+    int 21h
+
+    mov ah,09h ; quantity message
+    lea dx,qty_msg
+    int 21h
+
+    mov ah,0Ah
+    lea dx, qty_input
+    int 21h
+
+    mov ah, 02h
+    mov dl, 0Ah
+    int 21h
+    mov dl, 0Dh
+    int 21h
+
+    continue2:
+    mov ah,09h
+    lea dx, current_meal
+    int 21h
+
+    cmp qty, '1'
+    je show_chicken_rice
+    cmp qty, '2'
+    je show_egg
+    cmp qty, '3'
+    je show_roasted_pork
+    cmp qty, '4'
+    je show_char_xiu_fan
+    cmp qty, '5'
+    je show_wan_tan_mee
+
+    jmp show_asterisk
+
+    show_chicken_rice:
+    mov ah, 09h
+    lea dx, chicken_rice_msg
+    int 21h
+    jmp show_asterisk
+
+    show_egg:
+    mov ah,09h
+    lea dx, egg_msg
+    int 21h
+    jmp show_asterisk
+
+    show_roasted_pork:
+    mov ah,09h
+    lea dx, roasted_pork_msg
+    int 21h
+    jmp show_asterisk
+
+    show_char_xiu_fan:
+    mov ah,09h
+    lea dx, charxiufan_msg
+    int 21h
+    jmp show_asterisk
+
+    show_wan_tan_mee:
+    mov ah,09h
+    lea dx, wan_tan_mee_msg
+    int 21h
+    jmp show_asterisk
+
+    show_asterisk:
+    mov ah,09h
+    lea dx, asterisk
+    int 21h
+
+    mov cl,act_len ; output user stirng input
+    mov si,0
+
+    m2: mov ah, 02h
+    mov dl, kb_data[si]
+    int 21h
+
+    inc si
+    loop m2
+
+    mov ah,09h
+    lea dx, qty_msg2
+    int 21h
+
+    ; here modify
+
+    jmp exit_program 
+
+    mov al,30h
+    mov cx, 1
+
+    print:
+
+    cmp qty, '1' ; chicken rice 
+    je display1
+    cmp qty, '2' ; egg
+    je display2
+    cmp qty, '3' ; Roasted Pork
+    je display3
+    cmp qty, '4' ; Char Xiu Fan 
+    je display4
+    cmp qty, '5' ; wan tan mee
+    je display5
+
+    loop print 
+    jmp exit_program
+display1:
+    mov ah,09h
+    lea dx, price_chicken
+    int 21h
+
+    jmp continue
+
+ display2:
+    mov ah,09h
+    lea dx, price_egg
+    int 21h
+
+    jmp continue
+
+display3:
+    mov ah,09h
+    lea dx, price_roasted_pork
+    int 21h
+
+    jmp continue
+
+display4:
+    mov ah,09h
+    lea dx, price_charxiufan
+    int 21h
+
+    jmp continue
+
+display5:
+    mov ah,09h
+    lea dx, price_wan_tan_mee
     int 21h
 
 exit_program:
