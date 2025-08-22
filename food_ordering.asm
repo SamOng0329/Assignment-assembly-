@@ -35,6 +35,15 @@ current_meal db "current meal is: $",
 asterisk db " (* $",
 qty_msg2 db " ) $",
 
+;new modify
+total_msg db "Total price: RM $",
+dot_msg db ".$",
+hundreds db ?                
+tens db ?                        
+units db ?                      
+decimal db ?                  
+
+
 qty_input label byte
 max_len db 100
 act_len db ?
@@ -252,6 +261,145 @@ print_current_price:
     mov dl, 0Dh
     int 21h
 
+    ; modufy here
+    mov si, offset kb_data
+    mov cl, act_len
+    mov ch, 0
+    mov ax, 0
+convert_loop:
+    mov bl, [si]        
+    sub bl, '0'         ; ASCII To Arithmetic
+    mov dl, 10
+    mul dl              ; ax = ax * 10
+    add al, bl          ; ax = ax + 新数字
+    adc ah, 0           ; 处理进位
+    inc si
+    loop convert_loop
+    
+    mov bx, ax          
+
+    ; 根据选择的餐点进行乘法计算
+    cmp qty, '1'
+    je calculate_chicken
+    cmp qty, '2'
+    je calculate_egg
+    cmp qty, '3'
+    je calculate_pork
+    cmp qty, '4'
+    je calculate_charxiu
+    cmp qty, '5'
+    je calculate_wantan
+    
+calculate_chicken:
+    mov ax, bx          ; 数量在bx中
+    mov bx, 650         ; (RM 6.50)
+    mul bx              ; dx:ax = qty * rm
+    jmp process_total
+    
+calculate_egg:
+    mov ax, bx
+    mov bx, 150         ; (RM 1.50)
+    mul bx
+    jmp process_total
+    
+calculate_pork:
+    mov ax, bx
+    mov bx, 18800       ; (RM 188.00)
+    mul bx
+    jmp process_total
+    
+calculate_charxiu:
+    mov ax, bx
+    mov bx, 1100        ; (RM 11.00)
+    mul bx
+    jmp process_total
+    
+calculate_wantan:
+    mov ax, bx
+    mov bx, 750         ; (RM 7.50)
+    mul bx
+    
+process_total:
+    
+    ; RM TO Float
+    mov bx, 100
+    div bx              ; ax = RM, dx = float
+    
+    ; 保存结果
+    mov word ptr hundreds, ax  ; Keep RM
+    mov ax, dx          ; Float
+    mov bl, 10
+    div bl              ; al = Decimal, ah = Float
+    
+    mov tens, al        ; Decimal
+    mov units, ah       ; Float
+
+    ; Total Price
+    mov ah, 02h
+    mov dl, 0Ah
+    int 21h
+    mov dl, 0Dh
+    int 21h
+    
+    mov ah, 09h
+    lea dx, total_msg
+    int 21h
+    
+    ; Display RM
+    mov ax, word ptr hundreds
+    call display_number 
+    
+    mov ah, 09h
+    lea dx, dot_msg
+    int 21h
+    
+    ; Show decimal
+    mov al, tens
+    add al, '0'
+    mov ah, 02h
+    mov dl, al
+    int 21h
+    
+    ; Show Float
+    mov al, units
+    add al, '0'
+    mov ah, 02h
+    mov dl, al
+    int 21h
+    
+    jmp exit_program
+
+display_number:
+    push ax
+    push bx
+    push cx
+    push dx
+    
+    mov cx, 0
+    mov bx, 10
+div_loop:
+    xor dx, dx
+    div bx
+    push dx
+    inc cx
+    test ax, ax
+    jnz div_loop
+    
+print_loop:
+    pop dx
+    add dl, '0'
+    mov ah, 02h
+    int 21h
+    loop print_loop
+    
+    pop dx
+    pop cx
+    pop bx
+    pop ax
+    ret
+
+    ;end here
+
     continue2:
     mov ah,09h
     lea dx, current_meal
@@ -379,4 +527,4 @@ exit_program:
     int 21h
 
 main  ENDP
-    end main 
+    end main
