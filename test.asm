@@ -1,214 +1,126 @@
-.model small
-; .stack 100h
-.data
-Welcome_Msg db "Welcome to food ordering system $",
-Menu db "MENU $",
-chicken_rice_name db "1.Chicken Rice $",
-egg_name db "2.Egg $",
-roasted_pork_name db "3.Roasted Pork $",
-charxiufan_name db "4.Char Xiu Fan $"   ,
-wan_tan_mee_name db "5.Wan Tan Mee $",
-chicken_rice_price db " = RM 6.50 $",
-egg_price db " = RM 1.50 $",
-roasted_pork_price db " = RM 1888 $",
-charxiufan_price db " = RM 11.00 $",
-wan_tan_mee_price db " = RM 7.50 $",
-promptChooseMSG db "Please choose your meals (1~5) > $",
-SelectedMeal db "Your meal is: $",
-chicken_rice_msg db "Chicken Rice $",
-egg_msg db "Egg $",
-roasted_pork_msg db "Roasted Pork $",
-charxiufan_msg db "Char Xiu Fan $",
-wan_tan_mee_msg db "Wan Tan Mee $",
-current_price db "your current price is : RM $",
-price db ?
-qty db ? ; to store user input qty
-.code 
-main PROC
-    mov ax, @data
-    mov ds,ax
+.MODEL SMALL
+.STACK 100h
+.DATA
+    msgMember  DB "Are you a member? (Y/N) > $"
+    msgLogin   DB 0Dh,0Ah,"Please Login",0Dh,0Ah,"$"
+    msgUser    DB "Username > $"
+    msgPass    DB "Password > $"
+    msgSuccess DB 0Dh,0Ah,"Login Successfully$"
+    msgFail    DB 0Dh,0Ah,"Invalid Username/Password, please try again.",0Dh,0Ah,"$"
 
-    mov ah, 09h ; shows welcome message 
-    lea dx, Welcome_Msg 
-    int 21h 
+    ; Stored credentials
+    username   DB "SamOng",0
+    password   DB "123456",0
 
-    mov ah, 02h ; new line 
-    mov dl, 0Dh
-    int 21h 
-    mov dl, 0Ah
-    int 21h
+    ; Buffers for input
+    inputUser  DB 20 DUP(0)
+    inputPass  DB 20 DUP(0)
 
-    mov ah, 02h ; new line 
-    mov dl, 0Dh
-    int 21h 
-    mov dl, 0Ah
-    int 21h
+    ans        DB ?
 
-    mov ah, 09h ; shows text "MENU"
-    lea dx, Menu
-    int 21h 
+.CODE
+MAIN PROC
+    MOV AX, @DATA
+    MOV DS, AX
 
-    mov ah, 02h ; new line 
-    mov dl, 0Ah
-    int 21h
+    ; Ask if member
+    LEA DX, msgMember
+    MOV AH, 09h
+    INT 21h
 
-    mov ah, 09h ; Chicken Rice Name
-    lea dx, chicken_rice_name
-    int 21h
+    ; Read one character
+    MOV AH, 01h
+    INT 21h
+    MOV ans, AL
 
-    mov ah, 09h ; chicken rice price 
-    lea dx, chicken_rice_price 
-    int 21h
+    CMP ans, 'Y'
+    JNE EXIT       ; If not 'Y', exit program
 
-    mov ah, 02h ; new line 
-    mov dl, 0Ah
-    int 21h
+    ; Print login prompt once
+    LEA DX, msgLogin
+    MOV AH, 09h
+    INT 21h
 
-    mov ah, 09h ; Egg Name 
-    lea dx, egg_name
-    int 21h
+LOGIN_AGAIN:
+    ; Ask username
+    LEA DX, msgUser
+    MOV AH, 09h
+    INT 21h
 
-    mov ah, 09h ; egg_price 
-    lea dx, egg_price 
-    int 21h
+    ; --- Read username ---
+    LEA SI, inputUser
+READ_USER:
+    MOV AH, 01h
+    INT 21h
+    CMP AL, 0Dh
+    JE END_USER
+    MOV [SI], AL
+    INC SI
+    JMP READ_USER
+END_USER:
+    MOV BYTE PTR [SI], 0
 
-    mov ah, 02h ; new line 
-    mov dl, 0Ah
-    int 21h
+    ; Compare username
+    LEA SI, inputUser
+    LEA DI, username
+CMP_USER:
+    MOV AL, [SI]
+    MOV BL, [DI]
+    CMP AL, BL
+    JNE WRONG
+    CMP AL, 0
+    JE USER_OK
+    INC SI
+    INC DI
+    JMP CMP_USER
 
-    mov ah, 09h ; Roasted Pork Name 
-    lea dx, roasted_pork_name
-    int 21h 
+USER_OK:
+    ; Ask password
+    LEA DX, msgPass
+    MOV AH, 09h
+    INT 21h
 
-    mov ah,09h ; Roasted Pork Price 
-    lea dx, roasted_pork_price 
-    int 21h
+    ; --- Read password ---
+    LEA SI, inputPass
+READ_PASS:
+    MOV AH, 01h
+    INT 21h
+    CMP AL, 0Dh
+    JE END_PASS
+    MOV [SI], AL
+    INC SI
+    JMP READ_PASS
+END_PASS:
+    MOV BYTE PTR [SI], 0
 
-    mov ah, 02h ; new line
-    mov dl, 0Dh
-    int 21h 
-    mov dl, 0Ah
-    int 21h 
+    ; Compare password
+    LEA SI, inputPass
+    LEA DI, password
+CMP_PASS:
+    MOV AL, [SI]
+    MOV BL, [DI]
+    CMP AL, BL
+    JNE WRONG
+    CMP AL, 0
+    JE LOGIN_OK
+    INC SI
+    INC DI
+    JMP CMP_PASS
 
-    mov ah, 09h ; Char Xiu Fan Name 
-    lea dx, charxiufan_name 
-    int 21h 
+WRONG:
+    LEA DX, msgFail
+    MOV AH, 09h
+    INT 21h
+    JMP LOGIN_AGAIN
 
-    mov ah, 09h ; Char Xiu Fan Price 
-    lea dx, charxiufan_price
-    int 21h
+LOGIN_OK:
+    LEA DX, msgSuccess
+    MOV AH, 09h
+    INT 21h
+    JMP EXIT
 
-    mov ah, 02h ; new line 
-    mov dl, 0Dh
-    int 21h 
-    mov dl, 0Ah
-    int 21h 
-
-    mov ah, 09h ; Wan Tan Mee Name 
-    lea dx, wan_tan_mee_name 
-    int 21h 
-
-    mov ah, 09h ; Wan Tan Mee Price
-    lea dx, wan_tan_mee_price
-    int 21h
-
-   mov ah, 02h ; new line 
-    mov dl, 0Ah
-    int 21h
-
-    mov ah, 09h ; Prompt user to choose meals  
-    lea dx, promptChooseMSG
-    int 21h 
-
-    mov ah,01h ; user input 
-    int 21h 
-    mov qty,al
-
-    mov ah, 02h ; new line 
-    mov dl, 0Ah
-    int 21h
-
-    mov ah, 02h
-    mov dl, 0Dh
-    int 21h
-    mov dl, 0Ah
-    int 21h
-
-    mov ah, 09h
-    lea dx, SelectedMeal
-    int 21h
-
-    cmp qty, '1' ; chicken rice 
-    je print_chicken_rice
-    cmp qty, '2' ; egg
-    je egg
-    cmp qty, '3' ; Roasted Pork
-    je roasted_pork
-    cmp qty, '4' ; Char Xiu Fan 
-    je char_xiu_fan
-    cmp qty, '5' ; wan tan mee
-    je wan_tan_mee 
-
-    jmp exit_program 
-
-print_chicken_rice: ; chicken rice 
-
-    mov ah, 09h
-    lea dx, chicken_rice_msg 
-    int 21h
-
-    jmp print_current_price 
-
-egg: ; egg
-    mov ah, 09h
-    lea dx, egg_msg
-    int 21h
-    jmp print_current_price 
-
-roasted_pork: ; roasted pork
-    mov ah,09h
-    lea dx, roasted_pork_msg
-    int 21h
-    jmp print_current_price 
-
-char_xiu_fan: ; char xiu fan 
-    mov ah,09h
-    lea dx, charxiufan_msg 
-    int 21h
-    jmp print_current_price 
-
-wan_tan_mee:
-    mov ah, 09h
-    lea dx, wan_tan_mee_msg
-    int 21h
-    jmp print_current_price 
-
-print_current_price:
-   mov ah, 02h ; new line 
-    mov dl, 0Ah
-    int 21h
-
-   mov ah, 02h ; new line 
-    mov dl, 0Ah
-    int 21h
-
-    mov ah, 09h ; current meals is 
-    lea dx, SelectedMeal
-    int 21h
-
-    mov ah,02h
-    mov dl, 0Dh
-    int 21h
-    mov al, 0Ah
-    int 21h
-
-    mov ah, 09h ; current price 
-    lea dx, current_price 
-    int 21h
-
-exit_program:
-    mov ax, 4c00h
-    int 21h
-
-main  ENDP
-    end main 
+EXIT:
+    MOV AH, 4Ch
+    INT 21h
+MAIN ENDP
+END MAIN
