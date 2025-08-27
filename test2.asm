@@ -65,12 +65,7 @@ login:
     int 21h
 
     ; Read username
-    lea dx,msgUser
-    mov ah, 09h
-    int 21h
-    mov ah, 0Ah
-    lea dx,inputUser
-    int 21h
+    lea si, input_pass
 
     ; Read password
     lea dx,msgPass
