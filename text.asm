@@ -1,4 +1,4 @@
-.model small
+`.model small
 ; .stack 100h
 .data
 msg db "Welcome to food ordering system $",
