@@ -1,6 +1,5 @@
 .model small
 .data
-    ; Login system variables
     msgLoginPrompt DB "--- Please login ---$"
     msgUser     DB 0Dh,0Ah,"Username > $"
     username    DB "SamOng",0
@@ -14,7 +13,7 @@
 
     msgPassPrompt DB 0Dh,0Ah,"Password > $"
     password      DB "A", 0
-    pass_input    DB ?              ; Store single password char
+    pass_input    DB ?              
 
     msgMatch    DB 0Dh,0Ah,"Username matches!$"
     msgNoMatch  DB 0Dh,0Ah,"USERNAME INVALID Please try again$"
@@ -23,7 +22,6 @@
     msgBye      DB 0Dh,0Ah,"Goodbye!$"
     msgLogin    DB 0Dh,0Ah,"Jumping to Order Page...$"
 
-    ; Food ordering system variables
     msg db "Welcome to food ordering system $"
     msg1 db "MENU $"
     chicken_rice_name db "1.Chicken Rice $"
@@ -33,11 +31,13 @@
     wan_tan_mee_name db "5.Wan Tan Mee $"
     chicken_rice_price db " = RM 6.50 $"
     egg_price db " = RM 1.50 $"
-    roasted_pork_price db " = RM 18.80 $"  ; Fixed price from 188.00 to 18.80
+    roasted_pork_price db " = RM 18.80 $"
     charxiufan_price db " = RM 11.00 $"
     wan_tan_mee_price db " = RM 7.50 $"
     msg7 db "Please choose your meals (1~5) > $"
     msg8 db "Your meal is: $"
+    invalid_food_msg db "Invalid menu option. Please try again. $"
+    invalid_qty_msg db "Invalid quantity. Enter 01~99 only.$"
     chicken_rice_msg db "Chicken Rice $"
     egg_msg db "Egg $"
     roasted_pork_msg db "Roasted Pork $"
@@ -45,15 +45,15 @@
     wan_tan_mee_msg db "Wan Tan Mee $"
     current_price db "your current price is : RM $"
     price db ?
-    qty db ? ; to store user input qty
+    qty db ? 
 
     price_chicken db ' 6.50$'
     price_egg db ' 1.50$'
-    price_roasted_pork db ' 18.80$'  ; Fixed price display from 188.00 to 18.80
+    price_roasted_pork db ' 18.80$'
     price_charxiufan db '11.00$'
     price_wan_tan_mee db '7.50$'
 
-    qty_msg db "Enter your quantity (integers) > $"
+    qty_msg db "Enter your quantity (integers, 01~99) > $"
     current_meal db "current meal is: $"
     asterisk db " (* $"
     qty_msg2 db " ) $"
@@ -63,17 +63,13 @@
     hundreds dw ?
     tens db ?                        
     units db ?                      
-    decimal db ?                  
 
-    ;== Addon feature appended here ==
     addon_prompt db 0Dh,0Ah,"Do you want to add an addon? (y/n) > $"
     addon_ordered_msg db 0Dh,0Ah,"Addon ordered! RM 2.00 added.$"
     final_total_msg db 0Dh,0Ah,"Final total price: RM $"
     addon_price dw 200 ; RM 2.00 in cents
     addon_ans db ?
-    ;== End addon feature ==
 
-    ;== Arithmetic (Taxes: GST 6%, SST 9%) ==
     gst_msg db 0Dh,0Ah,"GST (6%): RM $"
     sst_msg db 0Dh,0Ah,"SST (9%): RM $"
     gst_sst_total_msg db 0Dh,0Ah,"GRAND TOTAL with GST & SST: RM $"
@@ -81,39 +77,27 @@
     sst_tens db ?
     sst_units db ?
 
-    ;== Member discount feature ==
     member_discount_msg db 0Dh,0Ah,"Member discount (10%): -RM $"
     member_final_msg db 0Dh,0Ah,"FINAL AMOUNT after member discount: RM $"
-    ;== End member discount feature ==
-
-    qty_input label byte
-    max_len db 100
-    act_len db ?
-    kb_data db 100 DUP(0)
-
-    ; 32-bit calculation variables
-    total_cents dd 0    ; Total price in cents
-    temp32 dd 0         ; Temporary 32-bit storage
-    gst_cents dd 0      ; GST amount in cents
-    sst_cents dd 0      ; SST amount in cents
-    discount_cents dd 0 ; Member discount amount in cents
     
-    ; Variables for displaying tax amounts
+    total_cents dd 0    
+    temp32 dd 0         
+    gst_cents dd 0      
+    sst_cents dd 0      
+    discount_cents dd 0 
+    
     gst_hundreds dw 0
     gst_tens2 db 0
     gst_units2 db 0
     sst_hundreds dw 0
     sst_tens2 db 0
     sst_units2 db 0
-
-    invalid_qty_msg db 0Dh,0Ah,'Invalid quantity! Please enter numbers only.$'
-
+    
 .code 
 main PROC
     mov ax, @data
     mov ds,ax
 
-    ; Clear screen with blue background, white text
     mov ax, 0600h
     mov bh,71h
     mov cx,0h
@@ -121,7 +105,6 @@ main PROC
     int 10h
     jmp LOGIN_PROMPT
 
-; LOGIN SYSTEM WITH RETRY MECHANISM 
 LOGIN_PROMPT:
     lea dx, msgLoginPrompt
     mov ah, 09h
@@ -145,17 +128,17 @@ USERNAME_INPUT:
     mov bx, 0
 
 check_username:
-    mov al, [si]       ; Get input char
-    mov bl, [di]       ; Get username char
-    cmp bl, 0          ; End of username string?
+    mov al, [si]       
+    mov bl, [di]       
+    cmp bl, 0          
     je USERNAME_MATCH
-    cmp cx, 0          ; End of input string?
+    cmp cx, 0          
     je USERNAME_NO_MATCH
-    cmp al, bl         ; Compare input and username char
+    cmp al, bl         
     jne USERNAME_NO_MATCH
-    inc si             ; Move to next input char
-    inc di             ; Move to next username char
-    dec cx             ; Decrement input length
+    inc si             
+    inc di             
+    dec cx             
     jmp check_username
 
 USERNAME_MATCH:
@@ -168,12 +151,12 @@ PASSWORD_PROMPT:
     mov ah, 09h
     int 21h
 
-    mov ah, 07h        ; Get single char, not displayed
+    mov ah, 07h        
     int 21h
     mov pass_input, al
 
     mov al, pass_input
-    mov bl, password   ; password is "A"
+    mov bl, password   
     cmp al, bl
     jne PASS_NO_MATCH
 
@@ -184,7 +167,7 @@ PASSWORD_PROMPT:
     mov ah, 09h
     int 21h
     
-    mov ah, 02h ; new line 
+    mov ah, 02h 
     mov dl, 0Dh
     int 21h 
     mov dl, 0Ah
@@ -196,124 +179,119 @@ PASS_NO_MATCH:
     lea dx, msgPassNoMatch
     mov ah, 09h
     int 21h
-    ; Retry password input
     jmp PASSWORD_PROMPT
 
 USERNAME_NO_MATCH:
     lea dx, msgNoMatch
     mov ah, 09h
     int 21h
-    ; Retry username input
     jmp USERNAME_INPUT
 
-; END LOGIN SYSTEM 
-
 START_ORDER:
-    ; ORDERING SYSTEM 
-
-    mov ah, 02h ; new line 
+    mov ah, 02h 
     mov dl, 0Dh
     int 21h 
     mov dl, 0Ah
     int 21h
 
-    mov ah, 09h ; Welcome to food ordering system
+    mov ah, 09h 
     lea dx, msg 
     int 21h 
 
-    mov ah, 02h ; new line 
+    mov ah, 02h 
     mov dl, 0Dh
     int 21h 
     mov dl, 0Ah
     int 21h
 
-    mov ah, 02h ; new line 
+    mov ah, 02h 
     mov dl, 0Dh
     int 21h 
     mov dl, 0Ah
     int 21h
 
-    mov ah, 09h ; Menu
+    mov ah, 09h 
     lea dx, msg1
     int 21h 
 
-    mov ah, 02h ; new line 
+    mov ah, 02h 
     mov dl, 0Ah
     int 21h
 
-    mov ah, 09h ; Chicken Rice Name
+    mov ah, 09h 
     lea dx, chicken_rice_name
     int 21h
 
-    mov ah, 09h ; chicken rice price 
+    mov ah, 09h 
     lea dx, chicken_rice_price 
     int 21h
 
-    mov ah, 02h ; new line 
+    mov ah, 02h 
     mov dl, 0Ah
     int 21h
 
-    mov ah, 09h ; Egg Name 
+    mov ah, 09h 
     lea dx, egg_name
     int 21h
 
-    mov ah, 09h ; egg_price 
+    mov ah, 09h 
     lea dx, egg_price 
     int 21h
 
-    mov ah, 02h ; new line 
+    mov ah, 02h 
     mov dl, 0Ah
     int 21h
 
-    mov ah, 09h ; Roasted Pork Name 
+    mov ah, 09h 
     lea dx, roasted_pork_name
     int 21h 
 
-    mov ah,09h ; Roasted Pork Price 
+    mov ah,09h 
     lea dx, roasted_pork_price 
     int 21h
 
-    mov ah, 02h ; new line
+    mov ah, 02h 
     mov dl, 0Dh
     int 21h 
     mov dl, 0Ah
     int 21h 
 
-    mov ah, 09h ; Char Xiu Fan Name 
+    mov ah, 09h 
     lea dx, charxiufan_name 
     int 21h 
 
-    mov ah, 09h ; Char Xiu Fan Price 
+    mov ah, 09h 
     lea dx, charxiufan_price
     int 21h
 
-    mov ah, 02h ; new line 
+    mov ah, 02h 
     mov dl, 0Dh
     int 21h 
     mov dl, 0Ah
     int 21h 
 
-    mov ah, 09h ; Wan Tan Mee Name 
+    mov ah, 09h 
     lea dx, wan_tan_mee_name 
     int 21h 
 
-    mov ah, 09h ; Wan Tan Mee Price
+    mov ah, 09h 
     lea dx, wan_tan_mee_price
     int 21h
 
-    mov ah, 02h ; new line 
+    mov ah, 02h 
     mov dl, 0Ah
     int 21h
 
-    mov ah, 09h ; Instruction to let customer select meals 
+user_input_menu:
+    mov ah, 09h 
     lea dx, msg7
     int 21h 
 
-    mov ah,01h ; user input 
+    mov ah,01h 
     int 21h 
     mov qty,al
 
-    mov ah, 02h ; new line 
+    mov ah, 02h 
     mov dl, 0Ah
     int 21h
 
@@ -327,38 +305,51 @@ START_ORDER:
     lea dx, msg8
     int 21h
 
-    cmp qty, '1' ; chicken rice 
+    cmp qty, '1' 
     je print_chicken_rice
-    cmp qty, '2' ; egg
+    cmp qty, '2' 
     je egg
-    cmp qty, '3' ; Roasted Pork
+    cmp qty, '3' 
     je roasted_pork
-    cmp qty, '4' ; Char Xiu Fan 
+    cmp qty, '4' 
     je char_xiu_fan
-    cmp qty, '5' ; wan tan mee
+    cmp qty, '5' 
     je wan_tan_mee 
 
-    jmp exit_program 
+    jmp invalid_option
 
-print_chicken_rice: ; chicken rice 
+invalid_option:
+    mov ah, 09h
+    lea dx, invalid_food_msg
+    int 21h
+
+    mov ah, 02h
+    mov dl, 0Dh
+    int 21h
+    mov dl, 0Ah
+    int 21h
+
+    jmp user_input_menu
+
+print_chicken_rice:
     mov ah, 09h
     lea dx, chicken_rice_msg 
     int 21h
     jmp print_current_price 
 
-egg: ; egg
+egg: 
     mov ah, 09h
     lea dx, egg_msg
     int 21h
     jmp print_current_price 
 
-roasted_pork: ; roasted pork
+roasted_pork:
     mov ah,09h
     lea dx, roasted_pork_msg
     int 21h
     jmp print_current_price 
 
-char_xiu_fan: ; char xiu fan 
+char_xiu_fan:
     mov ah,09h
     lea dx, charxiufan_msg 
     int 21h
@@ -371,81 +362,75 @@ wan_tan_mee:
     jmp print_current_price 
 
 print_current_price:
-    mov ah, 02h ; new line 
-    mov dl, 0Ah
-    int 21h
-
-    mov ah, 02h ; new line 
-    mov dl, 0Ah
-    int 21h
-
-    mov ah, 09h ; current meals is 
-    lea dx, msg8
-    int 21h
-
     mov ah,02h
     mov dl, 0Dh
     int 21h
     mov dl, 0Ah
     int 21h
 
-    mov ah, 09h ; current price 
+    mov ah, 09h 
     lea dx, current_price 
     int 21h
 
     jmp print
 
 continue:
-    mov ah,02h ; new line
+    mov ah,02h 
     mov dl,0Ah
     int 21h
 
-    mov ah,09h ; quantity message
+    mov ah,09h 
     lea dx,qty_msg
     int 21h
 
-get_qty_input:
-    mov ah,0Ah
-    lea dx, qty_input
+    mov ah, 01h
     int 21h
+    mov bl, al           
+    cmp bl, '0'
+    jb invalid_qty
+    cmp bl, '9'
+    ja invalid_qty
 
-    ; ===============================
-    ; FIXED: Buffer offsets for input
-    ; ===============================
-    mov cl, [kb_data+1]    ; actual input length
-    mov ch, 0
-    cmp cl, 0
-    je qty_invalid
+    mov ah, 01h
+    int 21h
+    mov bh, al           
+    cmp bh, '0'
+    jb invalid_qty
+    cmp bh, '9'
+    ja invalid_qty
 
-    mov si, offset kb_data + 2  ; start of actual input
+    mov ah, 01h
+    int 21h
+    cmp al, 0Dh          
+    jne invalid_qty
 
-validate_qty_digits:
-    mov al, [si]
-    cmp al, '0'
-    jb qty_invalid
-    cmp al, '9'
-    ja qty_invalid
-    inc si
-    loop validate_qty_digits
+    mov al, bl
+    sub al, '0'
+    mov ah, 10
+    mul ah               
+    mov cl, al
 
-    ; All chars are digits, now convert to number
-    mov si, offset kb_data + 2
-    mov cl, [kb_data+1]
-    mov ch, 0
-    mov ax, 0
+    mov al, bh
+    sub al, '0'
+    add cl, al           
 
-convert_loop:
-    mov bl, [si]
-    sub bl, '0'
-    mov dl, 10
-    mul dl
-    add al, bl
-    adc ah, 0
-    inc si
-    loop convert_loop
+    cmp cl, 1            
+    jb invalid_qty
+    cmp cl, 99           
+    ja invalid_qty
 
-    mov bx, ax          ; bx = quantity
+    xor bx, bx           
+    mov bl, cl           
 
+    jmp after_qty_input
+
+invalid_qty:
+    mov ah, 09h
+    lea dx, invalid_qty_msg
+    int 21h
+    jmp continue
+
+after_qty_input:
     cmp qty, '1'
     je calculate_chicken
     cmp qty, '2'
@@ -456,52 +441,40 @@ convert_loop:
     je calculate_charxiu
     cmp qty, '5'
     je calculate_wantan
-    jmp exit_program
-
-qty_invalid:
-    lea dx, invalid_qty_msg
-    mov ah, 09h
-    int 21h
-    jmp get_qty_input
-
+    
 calculate_chicken:
-    mov ax, 650         ; Chicken rice price (6.50 RM = 650 cents)
+    mov ax, 650         
     jmp multiply_qty
     
 calculate_egg:
-    mov ax, 150         ; Egg price (1.50 RM = 150 cents)
+    mov ax, 150         
     jmp multiply_qty
     
 calculate_pork:
-    mov ax, 1880        ; Roasted pork price (18.80 RM = 1880 cents)
+    mov ax, 1880        
     jmp multiply_qty
     
 calculate_charxiu:
-    mov ax, 1100        ; Char xiu fan price (11.00 RM = 1100 cents)
+    mov ax, 1100        
     jmp multiply_qty
     
 calculate_wantan:
-    mov ax, 750         ; Wan tan mee price (7.50 RM = 750 cents)
-    
-multiply_qty:
-    ; Calculate total: ax * bx
-    mul bx              ; dx:ax = price * quantity
-    mov word ptr total_cents, ax
-    mov word ptr total_cents+2, dx ; Save 32-bit result
-    
-    ; Convert to RM and cents
-    mov bx, 100
-    div bx              ; ax = RM part, dx = cents part
-    
-    mov word ptr hundreds, ax  ; Save RM
-    mov ax, dx          ; Get cents part
-    mov bl, 10
-    div bl              ; al = tens, ah = units
-    
-    mov tens, al        ; Save tens
-    mov units, ah       ; Save units
+    mov ax, 750         
 
-    ; Display total price
+multiply_qty:
+    mul bx              
+    mov word ptr total_cents, ax
+    mov word ptr total_cents+2, dx 
+    
+    mov bx, 100
+    div bx              
+    mov word ptr hundreds, ax  
+    mov ax, dx          
+    mov bl, 10
+    div bl              
+    mov tens, al        
+    mov units, ah       
+
     mov ah, 02h
     mov dl, 0Ah
     int 21h
@@ -512,7 +485,6 @@ multiply_qty:
     lea dx, total_msg
     int 21h
     
-    ; Display RM part
     mov ax, word ptr hundreds
     call display_number 
     
@@ -520,14 +492,12 @@ multiply_qty:
     lea dx, dot_msg
     int 21h
     
-    ; Display tens
     mov al, tens
     add al, '0'
     mov ah, 02h
     mov dl, al
     int 21h
     
-    ; Display units
     mov al, units
     add al, '0'
     mov ah, 02h
@@ -535,35 +505,25 @@ multiply_qty:
     int 21h
 
 CALC_TAXES:
-CALC_TAXES:
-    ; 计算税金 (GST 6% 和 SST 9%)
-    ; 总价已存储在 total_cents 中 (32位)
-    
-    ; 计算 GST (6%)
     mov ax, word ptr total_cents
     mov dx, word ptr total_cents+2
     mov bx, 6
-    call multiply_32_16 ; dx:ax = total_cents * 6
+    call multiply_32_16 
     mov bx, 100
-    call divide_32_16   ; dx:ax = (total_cents * 6) / 100
+    call divide_32_16   
     
-    ; 保存 GST
     mov word ptr gst_cents, ax
     mov word ptr gst_cents+2, dx
     
-    ; 转换为元和分显示
     mov bx, 100
-    div bx              ; ax = 元部分, dx = 分部分
-    
-    mov gst_hundreds, ax  ; 保存元
-    mov ax, dx          ; 获取分部分
+    div bx              
+    mov gst_hundreds, ax  
+    mov ax, dx          
     mov bl, 10
-    div bl              ; al = 角, ah = 分
+    div bl              
+    mov gst_tens2, al   
+    mov gst_units2, ah  
     
-    mov gst_tens2, al   ; 保存角
-    mov gst_units2, ah  ; 保存分
-    
-    ; 显示 GST
     mov ah, 02h
     mov dl, 0Ah
     int 21h
@@ -574,7 +534,6 @@ CALC_TAXES:
     lea dx, gst_msg
     int 21h
     
-    ; 显示GST元部分
     mov ax, gst_hundreds
     call display_number 
     
@@ -582,45 +541,37 @@ CALC_TAXES:
     lea dx, dot_msg
     int 21h
     
-    ; 显示GST角
     mov al, gst_tens2
     add al, '0'
     mov ah, 02h
     mov dl, al
     int 21h
     
-    ; 显示GST分
     mov al, gst_units2
     add al, '0'
     mov ah, 02h
     mov dl, al
     int 21h
     
-    ; 计算 SST (9%)
     mov ax, word ptr total_cents
     mov dx, word ptr total_cents+2
     mov bx, 9
-    call multiply_32_16 ; dx:ax = total_cents * 9
+    call multiply_32_16 
     mov bx, 100
-    call divide_32_16   ; dx:ax = (total_cents * 9) / 100
+    call divide_32_16   
     
-    ; 保存 SST
     mov word ptr sst_cents, ax
     mov word ptr sst_cents+2, dx
     
-    ; 转换为元和分显示
     mov bx, 100
-    div bx              ; ax = 元部分, dx = 分部分
-    
-    mov sst_hundreds, ax  ; 保存元
-    mov ax, dx          ; 获取分部分
+    div bx              
+    mov sst_hundreds, ax  
+    mov ax, dx          
     mov bl, 10
-    div bl              ; al = 角, ah = 分
+    div bl              
+    mov sst_tens2, al   
+    mov sst_units2, ah  
     
-    mov sst_tens2, al   ; 保存角
-    mov sst_units2, ah  ; 保存分
-    
-    ; 显示 SST
     mov ah, 02h
     mov dl, 0Ah
     int 21h
@@ -631,7 +582,6 @@ CALC_TAXES:
     lea dx, sst_msg
     int 21h
     
-    ; 显示SST元部分
     mov ax, sst_hundreds
     call display_number 
     
@@ -639,45 +589,33 @@ CALC_TAXES:
     lea dx, dot_msg
     int 21h
     
-    ; 显示SST角
     mov al, sst_tens2
     add al, '0'
     mov ah, 02h
     mov dl, al
     int 21h
     
-    ; 显示SST分
     mov al, sst_units2
     add al, '0'
     mov ah, 02h
     mov dl, al
     int 21h
     
-    ; 计算含税总价
     mov ax, word ptr total_cents
     mov dx, word ptr total_cents+2
-    
-    ; 加上 GST
     add ax, word ptr gst_cents
     adc dx, word ptr gst_cents+2
-    
-    ; 加上 SST
     add ax, word ptr sst_cents
     adc dx, word ptr sst_cents+2
-    
-    ; 转换为元和分
     mov bx, 100
-    div bx              ; ax = 元部分, dx = 分部分
-    
-    mov word ptr hundreds, ax  ; 保存元
-    mov ax, dx          ; 获取分部分
+    div bx              
+    mov word ptr hundreds, ax  
+    mov ax, dx          
     mov bl, 10
-    div bl              ; al = 角, ah = 分
+    div bl              
+    mov tens, al        
+    mov units, ah       
     
-    mov tens, al        ; 保存角
-    mov units, ah       ; 保存分
-    
-    ; 显示含税总价
     mov ah, 02h
     mov dl, 0Ah
     int 21h
@@ -688,7 +626,6 @@ CALC_TAXES:
     lea dx, gst_sst_total_msg
     int 21h
     
-    ; 显示元部分
     mov ax, word ptr hundreds
     call display_number 
     
@@ -696,14 +633,110 @@ CALC_TAXES:
     lea dx, dot_msg
     int 21h
     
-    ; 显示角
     mov al, tens
     add al, '0'
     mov ah, 02h
     mov dl, al
     int 21h
     
-    ; 显示分
+    mov al, units
+    add al, '0'
+    mov ah, 02h
+    mov dl, al
+    int 21h
+
+    mov ax, word ptr total_cents
+    mov dx, word ptr total_cents+2
+    add ax, word ptr gst_cents
+    adc dx, word ptr gst_cents+2
+    add ax, word ptr sst_cents
+    adc dx, word ptr sst_cents+2
+    mov bx, 10
+    call multiply_32_16 
+    mov bx, 100
+    call divide_32_16   
+    
+    mov word ptr discount_cents, ax
+    mov word ptr discount_cents+2, dx
+    
+    mov bx, 100
+    div bx              
+    mov word ptr hundreds, ax  
+    mov ax, dx          
+    mov bl, 10
+    div bl              
+    mov tens, al        
+    mov units, ah       
+    
+    mov ah, 02h
+    mov dl, 0Ah
+    int 21h
+    mov dl, 0Dh
+    int 21h
+    
+    mov ah, 09h
+    lea dx, member_discount_msg
+    int 21h
+    
+    mov ax, word ptr hundreds
+    call display_number 
+    
+    mov ah, 09h
+    lea dx, dot_msg
+    int 21h
+    
+    mov al, tens
+    add al, '0'
+    mov ah, 02h
+    mov dl, al
+    int 21h
+    
+    mov al, units
+    add al, '0'
+    mov ah, 02h
+    mov dl, al
+    int 21h
+    
+    mov ax, word ptr total_cents
+    mov dx, word ptr total_cents+2
+    add ax, word ptr gst_cents
+    adc dx, word ptr gst_cents+2
+    add ax, word ptr sst_cents
+    adc dx, word ptr sst_cents+2
+    sub ax, word ptr discount_cents
+    sbb dx, word ptr discount_cents+2
+    mov bx, 100
+    div bx              
+    mov word ptr hundreds, ax  
+    mov ax, dx          
+    mov bl, 10
+    div bl              
+    mov tens, al        
+    mov units, ah       
+    
+    mov ah, 02h
+    mov dl, 0Ah
+    int 21h
+    mov dl, 0Dh
+    int 21h
+    
+    mov ah, 09h
+    lea dx, member_final_msg
+    int 21h
+    
+    mov ax, word ptr hundreds
+    call display_number 
+    
+    mov ah, 09h
+    lea dx, dot_msg
+    int 21h
+    
+    mov al, tens
+    add al, '0'
+    mov ah, 02h
+    mov dl, al
+    int 21h
+    
     mov al, units
     add al, '0'
     mov ah, 02h
@@ -712,145 +745,43 @@ CALC_TAXES:
 
     jmp exit_program
 
-; 32位乘以16位函数
-; 输入: dx:ax = 32位数, bx = 16位数
-; 输出: dx:ax = 结果
-
-; 32位除以16位函数
-; 输入: dx:ax = 32位数, bx = 16位数
-; 输出: dx:ax = 商
-
-; 显示数字函数
-display_number:
-    push ax
-    push bx
-    push cx
-    push dx
-    
-    mov cx, 0
-    mov bx, 10
-div_loop:
-    xor dx, dx
-    div bx
-    push dx
-    inc cx
-    test ax, ax
-    jnz div_loop
-    
-print_loop:
-    pop dx
-    add dl, '0'
-    mov ah, 02h
-    int 21h
-    loop print_loop
-    
-    pop dx
-    pop cx
-    pop bx
-    pop ax
-    ret
-
-print:
-    cmp qty, '1' ; chicken rice 
-    je display1
-    cmp qty, '2' ; egg
-    je display2
-    cmp qty, '3' ; Roasted Pork
-    je display3
-    cmp qty, '4' ; Char Xiu Fan 
-    je display4
-    cmp qty, '5' ; wan tan mee
-    je display5
-
-display1:
-    mov ah,09h
-    lea dx, price_chicken
-    int 21h
-    jmp continue
-
-display2:
-    mov ah,09h
-    lea dx, price_egg
-    int 21h
-    jmp continue
-
-display3:
-    mov ah,09h
-    lea dx, price_roasted_pork
-    int 21h
-    jmp continue
-
-display4:
-    mov ah,09h
-    lea dx, price_charxiufan
-    int 21h
-    jmp continue
-
-display5:
-    mov ah,09h
-    lea dx, price_wan_tan_mee
-    int 21h
-    jmp continue
-
-exit_program:
-    mov ax, 4c00h
-    int 21h
-
-; 32-bit multiply by 16-bit function
-; Input: dx:ax = 32-bit number, bx = 16-bit number
-; Output: dx:ax = result
 multiply_32_16 PROC
     push cx
     push si
-    
-    ; Save low 16 bits
+
     mov si, ax
-    
-    ; Calculate high 16 bits * bx
     mov ax, dx
-    mul bx              ; dx:ax = high 16 bits * bx
-    mov cx, ax          ; Save result high 16 bits
-    
-    ; Calculate low 16 bits * bx
+    mul bx              
+    mov cx, ax          
+
     mov ax, si
-    mul bx              ; dx:ax = low 16 bits * bx
-    
-    ; Combine results: cx:dx + ax
-    add dx, cx          ; Add high 16 bits result to dx:ax high part
-    
+    mul bx              
+    add dx, cx          
+
     pop si
     pop cx
     ret
 multiply_32_16 ENDP
 
-; 32-bit divide by 16-bit function
-; Input: dx:ax = 32-bit number, bx = 16-bit number
-; Output: dx:ax = quotient
 divide_32_16 PROC
     push cx
     push bx
-    
-    mov cx, bx          ; Save divisor
-    
-    ; Perform division
-    div cx              ; ax = quotient low 16 bits, dx = remainder
-    
-    ; For 32-bit division, we need to handle high bits
-    ; Simplified assuming result won't exceed 16 bits
-    xor dx, dx          ; Clear dx
-    
+
+    mov cx, bx          
+    div cx              
+    xor dx, dx          
+
     pop bx
     pop cx
     ret
 divide_32_16 ENDP
 
-; Display number function
 display_number:
     push ax
     push bx
     push cx
     push dx
-    
+
     mov cx, 0
     mov bx, 10
 div_loop:
@@ -860,14 +791,14 @@ div_loop:
     inc cx
     test ax, ax
     jnz div_loop
-    
+
 print_loop:
     pop dx
     add dl, '0'
     mov ah, 02h
     int 21h
     loop print_loop
-    
+
     pop dx
     pop cx
     pop bx
@@ -875,15 +806,15 @@ print_loop:
     ret
 
 print:
-    cmp qty, '1' ; chicken rice 
+    cmp qty, '1' 
     je display1
-    cmp qty, '2' ; egg
+    cmp qty, '2' 
     je display2
-    cmp qty, '3' ; Roasted Pork
+    cmp qty, '3' 
     je display3
-    cmp qty, '4' ; Char Xiu Fan 
+    cmp qty, '4' 
     je display4
-    cmp qty, '5' ; wan tan mee
+    cmp qty, '5' 
     je display5
 
 display1:

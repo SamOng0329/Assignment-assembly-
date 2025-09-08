@@ -33,7 +33,7 @@
     wan_tan_mee_name db "5.Wan Tan Mee $"
     chicken_rice_price db " = RM 6.50 $"
     egg_price db " = RM 1.50 $"
-    roasted_pork_price db " = RM 18.80 $"  ; Fixed price from 188.00 to 18.80
+    roasted_pork_price db " = RM 18.80 $"  ; 修改价格从188.00到18.80
     charxiufan_price db " = RM 11.00 $"
     wan_tan_mee_price db " = RM 7.50 $"
     msg7 db "Please choose your meals (1~5) > $"
@@ -49,7 +49,7 @@
 
     price_chicken db ' 6.50$'
     price_egg db ' 1.50$'
-    price_roasted_pork db ' 18.80$'  ; Fixed price display from 188.00 to 18.80
+    price_roasted_pork db ' 18.80$'  ; 修改价格显示从188.00到18.80
     price_charxiufan db '11.00$'
     price_wan_tan_mee db '7.50$'
 
@@ -58,6 +58,7 @@
     asterisk db " (* $"
     qty_msg2 db " ) $"
 
+    ;new modify
     total_msg db "Total price: RM $"
     dot_msg db ".$"
     hundreds dw ?
@@ -81,39 +82,30 @@
     sst_tens db ?
     sst_units db ?
 
-    ;== Member discount feature ==
-    member_discount_msg db 0Dh,0Ah,"Member discount (10%): -RM $"
-    member_final_msg db 0Dh,0Ah,"FINAL AMOUNT after member discount: RM $"
-    ;== End member discount feature ==
-
     qty_input label byte
     max_len db 100
     act_len db ?
-    kb_data db 100 DUP(0)
+    kb_data db 100 DUP('')
 
-    ; 32-bit calculation variables
-    total_cents dd 0    ; Total price in cents
-    temp32 dd 0         ; Temporary 32-bit storage
-    gst_cents dd 0      ; GST amount in cents
-    sst_cents dd 0      ; SST amount in cents
-    discount_cents dd 0 ; Member discount amount in cents
+    ; 新增变量用于32位计算
+    total_cents dd 0    ; 总价格（以分为单位）
+    temp32 dd 0         ; 临时32位存储
+    gst_cents dd 0      ; GST金额（分）
+    sst_cents dd 0      ; SST金额（分）
     
-    ; Variables for displaying tax amounts
+    ; 用于显示税金的变量
     gst_hundreds dw 0
     gst_tens2 db 0
     gst_units2 db 0
     sst_hundreds dw 0
     sst_tens2 db 0
     sst_units2 db 0
-
-    invalid_qty_msg db 0Dh,0Ah,'Invalid quantity! Please enter numbers only.$'
-
+    
 .code 
 main PROC
     mov ax, @data
     mov ds,ax
 
-    ; Clear screen with blue background, white text
     mov ax, 0600h
     mov bh,71h
     mov cx,0h
@@ -123,12 +115,14 @@ main PROC
 
 ; LOGIN SYSTEM WITH RETRY MECHANISM 
 LOGIN_PROMPT:
+
     lea dx, msgLoginPrompt
     mov ah, 09h
     int 21h
     jmp USERNAME_INPUT
 
 USERNAME_INPUT: 
+
     lea dx, msgUser
     mov ah, 09h
     int 21h
@@ -371,17 +365,17 @@ wan_tan_mee:
     jmp print_current_price 
 
 print_current_price:
-    mov ah, 02h ; new line 
-    mov dl, 0Ah
-    int 21h
+;    mov ah, 02h ; new line 
+;     mov dl, 0Ah
+;     int 21h
 
-    mov ah, 02h ; new line 
-    mov dl, 0Ah
-    int 21h
+;    mov ah, 02h ; new line 
+;     mov dl, 0Ah
+;     int 21h
 
-    mov ah, 09h ; current meals is 
-    lea dx, msg8
-    int 21h
+;     mov ah, 09h ; current meals is 
+;     lea dx, msg8
+;     int 21h
 
     mov ah,02h
     mov dl, 0Dh
@@ -404,48 +398,34 @@ continue:
     lea dx,qty_msg
     int 21h
 
-get_qty_input:
     mov ah,0Ah
     lea dx, qty_input
     int 21h
 
-    ; ===============================
-    ; FIXED: Buffer offsets for input
-    ; ===============================
-    mov cl, [kb_data+1]    ; actual input length
-    mov ch, 0
-    cmp cl, 0
-    je qty_invalid
+    mov ah, 02h
+    mov dl, 0Ah
+    int 21h
+    mov dl, 0Dh
+    int 21h
 
-    mov si, offset kb_data + 2  ; start of actual input
-
-validate_qty_digits:
-    mov al, [si]
-    cmp al, '0'
-    jb qty_invalid
-    cmp al, '9'
-    ja qty_invalid
-    inc si
-    loop validate_qty_digits
-
-    ; All chars are digits, now convert to number
-    mov si, offset kb_data + 2
-    mov cl, [kb_data+1]
+    ; 转换输入的数量为数字
+    mov si, offset kb_data
+    mov cl, act_len
     mov ch, 0
     mov ax, 0
-
 convert_loop:
-    mov bl, [si]
-    sub bl, '0'
+    mov bl, [si]        
+    sub bl, '0'         ; ASCII 转数字
     mov dl, 10
-    mul dl
-    add al, bl
-    adc ah, 0
+    mul dl              ; ax = ax * 10
+    add al, bl          ; ax = ax + 新数字
+    adc ah, 0           ; 处理进位
     inc si
     loop convert_loop
+    
+    mov bx, ax          ; bx = 数量
 
-    mov bx, ax          ; bx = quantity
-
+    ; 根据选择的餐点进行价格计算
     cmp qty, '1'
     je calculate_chicken
     cmp qty, '2'
@@ -456,52 +436,45 @@ convert_loop:
     je calculate_charxiu
     cmp qty, '5'
     je calculate_wantan
-    jmp exit_program
-
-qty_invalid:
-    lea dx, invalid_qty_msg
-    mov ah, 09h
-    int 21h
-    jmp get_qty_input
-
+    
 calculate_chicken:
-    mov ax, 650         ; Chicken rice price (6.50 RM = 650 cents)
+    mov ax, 650         ; 鸡肉饭价格 (6.50 RM = 650分)
     jmp multiply_qty
     
 calculate_egg:
-    mov ax, 150         ; Egg price (1.50 RM = 150 cents)
+    mov ax, 150         ; 鸡蛋价格 (1.50 RM = 150分)
     jmp multiply_qty
     
 calculate_pork:
-    mov ax, 1880        ; Roasted pork price (18.80 RM = 1880 cents)
+    mov ax, 1880        ; 烤猪价格 (18.80 RM = 1880分) - 修改价格
     jmp multiply_qty
     
 calculate_charxiu:
-    mov ax, 1100        ; Char xiu fan price (11.00 RM = 1100 cents)
+    mov ax, 1100        ; 叉烧饭价格 (11.00 RM = 1100分)
     jmp multiply_qty
     
 calculate_wantan:
-    mov ax, 750         ; Wan tan mee price (7.50 RM = 750 cents)
+    mov ax, 750         ; 云吞面价格 (7.50 RM = 750分)
     
 multiply_qty:
-    ; Calculate total: ax * bx
-    mul bx              ; dx:ax = price * quantity
+    ; 计算总价: ax * bx
+    mul bx              ; dx:ax = 价格 * 数量
     mov word ptr total_cents, ax
-    mov word ptr total_cents+2, dx ; Save 32-bit result
+    mov word ptr total_cents+2, dx ; 保存32位结果
     
-    ; Convert to RM and cents
+    ; 转换为元和分
     mov bx, 100
-    div bx              ; ax = RM part, dx = cents part
+    div bx              ; ax = 元部分, dx = 分部分
     
-    mov word ptr hundreds, ax  ; Save RM
-    mov ax, dx          ; Get cents part
+    mov word ptr hundreds, ax  ; 保存元
+    mov ax, dx          ; 获取分部分
     mov bl, 10
-    div bl              ; al = tens, ah = units
+    div bl              ; al = 角, ah = 分
     
-    mov tens, al        ; Save tens
-    mov units, ah       ; Save units
+    mov tens, al        ; 保存角
+    mov units, ah       ; 保存分
 
-    ; Display total price
+    ; 显示总价
     mov ah, 02h
     mov dl, 0Ah
     int 21h
@@ -512,7 +485,7 @@ multiply_qty:
     lea dx, total_msg
     int 21h
     
-    ; Display RM part
+    ; 显示元部分
     mov ax, word ptr hundreds
     call display_number 
     
@@ -520,21 +493,20 @@ multiply_qty:
     lea dx, dot_msg
     int 21h
     
-    ; Display tens
+    ; 显示角
     mov al, tens
     add al, '0'
     mov ah, 02h
     mov dl, al
     int 21h
     
-    ; Display units
+    ; 显示分
     mov al, units
     add al, '0'
     mov ah, 02h
     mov dl, al
     int 21h
 
-CALC_TAXES:
 CALC_TAXES:
     ; 计算税金 (GST 6% 和 SST 9%)
     ; 总价已存储在 total_cents 中 (32位)
@@ -715,136 +687,52 @@ CALC_TAXES:
 ; 32位乘以16位函数
 ; 输入: dx:ax = 32位数, bx = 16位数
 ; 输出: dx:ax = 结果
-
-; 32位除以16位函数
-; 输入: dx:ax = 32位数, bx = 16位数
-; 输出: dx:ax = 商
-
-; 显示数字函数
-display_number:
-    push ax
-    push bx
-    push cx
-    push dx
-    
-    mov cx, 0
-    mov bx, 10
-div_loop:
-    xor dx, dx
-    div bx
-    push dx
-    inc cx
-    test ax, ax
-    jnz div_loop
-    
-print_loop:
-    pop dx
-    add dl, '0'
-    mov ah, 02h
-    int 21h
-    loop print_loop
-    
-    pop dx
-    pop cx
-    pop bx
-    pop ax
-    ret
-
-print:
-    cmp qty, '1' ; chicken rice 
-    je display1
-    cmp qty, '2' ; egg
-    je display2
-    cmp qty, '3' ; Roasted Pork
-    je display3
-    cmp qty, '4' ; Char Xiu Fan 
-    je display4
-    cmp qty, '5' ; wan tan mee
-    je display5
-
-display1:
-    mov ah,09h
-    lea dx, price_chicken
-    int 21h
-    jmp continue
-
-display2:
-    mov ah,09h
-    lea dx, price_egg
-    int 21h
-    jmp continue
-
-display3:
-    mov ah,09h
-    lea dx, price_roasted_pork
-    int 21h
-    jmp continue
-
-display4:
-    mov ah,09h
-    lea dx, price_charxiufan
-    int 21h
-    jmp continue
-
-display5:
-    mov ah,09h
-    lea dx, price_wan_tan_mee
-    int 21h
-    jmp continue
-
-exit_program:
-    mov ax, 4c00h
-    int 21h
-
-; 32-bit multiply by 16-bit function
-; Input: dx:ax = 32-bit number, bx = 16-bit number
-; Output: dx:ax = result
 multiply_32_16 PROC
     push cx
     push si
     
-    ; Save low 16 bits
+    ; 保存低16位
     mov si, ax
     
-    ; Calculate high 16 bits * bx
+    ; 计算高16位 * bx
     mov ax, dx
-    mul bx              ; dx:ax = high 16 bits * bx
-    mov cx, ax          ; Save result high 16 bits
+    mul bx              ; dx:ax = 高16位 * bx
+    mov cx, ax          ; 保存结果高16位
     
-    ; Calculate low 16 bits * bx
+    ; 计算低16位 * bx
     mov ax, si
-    mul bx              ; dx:ax = low 16 bits * bx
+    mul bx              ; dx:ax = 低16位 * bx
     
-    ; Combine results: cx:dx + ax
-    add dx, cx          ; Add high 16 bits result to dx:ax high part
+    ; 合并结果: cx:dx + ax
+    add dx, cx          ; 将高16位的结果加到dx:ax的高位
     
     pop si
     pop cx
     ret
 multiply_32_16 ENDP
 
-; 32-bit divide by 16-bit function
-; Input: dx:ax = 32-bit number, bx = 16-bit number
-; Output: dx:ax = quotient
+; 32位除以16位函数
+; 输入: dx:ax = 32位数, bx = 16位数
+; 输出: dx:ax = 商
 divide_32_16 PROC
     push cx
     push bx
     
-    mov cx, bx          ; Save divisor
+    mov cx, bx          ; 保存除数
     
-    ; Perform division
-    div cx              ; ax = quotient low 16 bits, dx = remainder
+    ; 执行除法
+    div cx              ; ax = 商低16位, dx = 余数
     
-    ; For 32-bit division, we need to handle high bits
-    ; Simplified assuming result won't exceed 16 bits
-    xor dx, dx          ; Clear dx
+    ; 由于是32位除法，需要处理高位
+    ; 这里简化处理，假设结果不会超过16位
+    xor dx, dx          ; 清零dx
     
     pop bx
     pop cx
     ret
 divide_32_16 ENDP
 
-; Display number function
+; 显示数字函数
 display_number:
     push ax
     push bx
