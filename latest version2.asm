@@ -425,6 +425,12 @@ continue:
     jmp after_qty_input
 
 invalid_qty:
+    mov ah,02h
+    mov dl, 0Dh
+    int 21h
+    mov dl, 0Ah
+    int 21h
+
     mov ah, 09h
     lea dx, invalid_qty_msg
     int 21h
