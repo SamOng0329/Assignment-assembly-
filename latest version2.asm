@@ -2,7 +2,7 @@
 .data
     msgLoginPrompt DB "--- Please login ---$"
     msgUser     DB 0Dh,0Ah,"Username > $"
-    username    DB "SamOng",0
+    username    DB "User",0
 
     ans db ?
 
@@ -62,13 +62,7 @@
     dot_msg db ".$"
     hundreds dw ?
     tens db ?                        
-    units db ?                      
-
-    addon_prompt db 0Dh,0Ah,"Do you want to add an addon? (y/n) > $"
-    addon_ordered_msg db 0Dh,0Ah,"Addon ordered! RM 2.00 added.$"
-    final_total_msg db 0Dh,0Ah,"Final total price: RM $"
-    addon_price dw 200 ; RM 2.00 in cents
-    addon_ans db ?
+    units db ?                     
 
     gst_msg db 0Dh,0Ah,"GST (6%): RM $"
     sst_msg db 0Dh,0Ah,"SST (9%): RM $"
@@ -79,7 +73,12 @@
 
     member_discount_msg db 0Dh,0Ah,"Member discount (10%): -RM $"
     member_final_msg db 0Dh,0Ah,"FINAL AMOUNT after member discount: RM $"
-    
+
+    prompt_addon_msg db 0Dh,0Ah,"Do you want to add more items? (Y/N) > $"
+    prompt_addon_msg2 db "Generating New Order...$"
+    prompt_exit_msg db 0Dh,0Ah,"Thank you for ordering with us!$"
+    invalid_prompt_msg db "Invalid input. Please enter Y or N.$"
+
     total_cents dd 0    
     temp32 dd 0         
     gst_cents dd 0      
@@ -747,6 +746,69 @@ CALC_TAXES:
     add al, '0'
     mov ah, 02h
     mov dl, al
+    int 21h
+
+    jmp prompt_addon
+
+prompt_addon:
+    mov ah, 02h
+    mov dl, 0Dh
+    int 21h
+    mov dl, 0Ah
+    int 21h
+
+    mov ah, 09h
+    lea dx, prompt_addon_msg
+    int 21h
+
+    mov ah, 01h
+    int 21h
+    cmp al, 'Y'
+    je prompt_yes
+    cmp al, 'y'
+    je prompt_yes
+    cmp al, 'N'
+    je end_order
+    cmp al, 'n'
+    je end_order
+
+    jmp invalid_prompt
+
+invalid_prompt:
+    mov ah, 02h
+    mov dl, 0Dh
+    int 21h
+    mov dl, 0Ah
+    int 21h
+
+    mov ah, 09h
+    lea dx, invalid_prompt_msg
+    int 21h
+
+    jmp prompt_addon
+
+prompt_yes:
+    mov ah, 02h
+    mov dl, 0Dh
+    int 21h
+    mov dl, 0Ah
+    int 21h
+
+    mov ah, 09h
+    lea dx, prompt_addon_msg2
+    int 21h
+
+    jmp START_ORDER
+
+end_order:
+    mov ah, 02h
+    mov dl, 0Dh
+    int 21h
+    mov dl, 0Ah
+    int 21h
+
+    mov ah, 09h
+    lea dx, prompt_exit_msg
     int 21h
 
     jmp exit_program
