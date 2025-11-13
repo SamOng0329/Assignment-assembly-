@@ -365,17 +365,17 @@ wan_tan_mee:
     jmp print_current_price 
 
 print_current_price:
-;    mov ah, 02h ; new line 
-;     mov dl, 0Ah
-;     int 21h
+   mov ah, 02h ; new line 
+    mov dl, 0Ah
+    int 21h
 
-;    mov ah, 02h ; new line 
-;     mov dl, 0Ah
-;     int 21h
+   mov ah, 02h ; new line 
+    mov dl, 0Ah
+    int 21h
 
-;     mov ah, 09h ; current meals is 
-;     lea dx, msg8
-;     int 21h
+    mov ah, 09h ; current meals is 
+    lea dx, msg8
+    int 21h
 
     mov ah,02h
     mov dl, 0Dh
